@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, ArrowLeft, BarChart3, Home, Zap, Ruler, Shield, DollarSign, TrendingUp, TreePine } from 'lucide-react';
 import { fetchLandPlotById } from '@/lib/supabase';
 import { calculatePlotScore } from '@/scoring/engine';
@@ -8,16 +8,20 @@ import type { LandPlot, Segment } from '@/types';
 export default function PlotDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [plot, setPlot] = useState<LandPlot | null>(null);
+  const location = useLocation();
+  const [plot, setPlot] = useState<LandPlot | null>((location.state as any)?.plot || null);
   const [segment, setSegment] = useState<Segment>('comfort');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!((location.state as any)?.plot));
   const [scoreResult, setScoreResult] = useState<ReturnType<typeof calculatePlotScore> | null>(null);
 
   useEffect(() => {
     const load = async () => {
       if (!id) return;
-      const data = await fetchLandPlotById(Number(id));
-      setPlot(data);
+      // If plot not passed via state, fetch from Supabase
+      if (!plot) {
+        const data = await fetchLandPlotById(Number(id));
+        setPlot(data);
+      }
       setLoading(false);
     };
     load();
@@ -90,12 +94,12 @@ export default function PlotDetailPage() {
       { label: 'Юр. чистота', value: ['Чистый', 'Несущественные', 'Значимые', 'Арест'][plot.legal_cleanliness - 1] },
     ]},
     { key: 'financial', label: 'Финансовые', icon: DollarSign, items: [
-      { label: 'Кадастр. стоимость', value: `${plot.cadastral_cost_per_sqm.toLocaleString('ru')} ₽/м²` },
+      { label: 'Кадастр. стоимость', value: `${plot.cadastral_cost_per_sqm.toLocaleString('ru')} руб/м²` },
       { label: 'Кад./рынок', value: `${plot.cadastral_to_market_ratio_percent.toFixed(0)}%` },
       { label: 'Подготовка', value: ['Низкие', 'Средние', 'Высокие', 'Критичные'][plot.preparation_costs_level - 1] },
     ]},
     { key: 'market', label: 'Рыночные', icon: TrendingUp, items: [
-      { label: 'Цена рядом', value: `${plot.nearby_avg_price_per_sqm.toLocaleString('ru')} тыс. ₽/м²` },
+      { label: 'Цена рядом', value: `${plot.nearby_avg_price_per_sqm.toLocaleString('ru')} тыс. руб/м²` },
       { label: 'Поглощение', value: `${plot.absorption_rate_months} мес.` },
       { label: 'Конкуренция', value: `${plot.competition_within_3km} проектов` },
     ]},
