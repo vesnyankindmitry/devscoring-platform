@@ -215,6 +215,7 @@ export default function RegionDetailPage() {
                 <Link
                   key={plot.id}
                   to={`/plot/${plot.id}`}
+                  state={{ plot }}
                   className="bg-white rounded-xl border border-gray-200 p-5 hover:border-emerald-300 hover:shadow-md transition-all group"
                 >
                   <div className="flex items-start justify-between mb-3">
